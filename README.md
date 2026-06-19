@@ -1,23 +1,24 @@
 # Anthropic & Claude — Official Resource Collection
 
 A personal, offline-readable compilation of Anthropic's official Claude documentation,
-cookbooks, courses, and engineering guidance — built into **PDF**, **EPUB**, and **AZW3**
-(Kindle) for distraction-free reading.
+cookbooks, courses, and engineering guidance — built into a single cohesive **EPUB** and
+**AZW3** (Kindle) ebook for distraction-free reading.
 
 This repo is both the *collection* and the *build system* that turns it into ebooks.
 
 ---
 
-> **📌 Status: this README is currently a build guide / blueprint, not a description of finished tooling.**
+> **✅ Status: the pipeline is built and runs.** `make all` assembles ~280 curated sources
+> into one EPUB + AZW3 with an eight-part table of contents. Quick start:
 >
-> What exists today: the resource harvester (`anthropic_resources.py`), its generated index
-> (`anthropic_resources.{md,json,csv}`), and the cloned official repos under
-> `anthropic-collection/`. The ebook pipeline below — `metadata.yaml`, `manifest.txt`, the
-> `Makefile`, and the Pandoc/Calibre build — is the **planned design**; those files are not in
-> the repo yet. Sections describing them are the spec to implement against.
+> ```bash
+> make fetch       # download web-only docs (platform, Claude Code, essays) into docs/
+> make notebooks   # convert the curated .ipynb set to Markdown
+> make all         # assemble build/book.md -> output/*.epub + *.azw3
+> ```
 >
-> As we build each piece, update this README to match, removing it from "planned" once it's
-> real. The goal is for this file to converge on an accurate description of the codebase.
+> **EPUB + AZW3 only — PDF is intentionally not built** (no TeX dependency). Curation lives in
+> `manifest.txt`; the assembler is `build_book.py`; the web fetch is `fetch_docs.py`.
 
 ---
 
@@ -44,26 +45,25 @@ The collection is assembled from three kinds of official, first-party sources:
 ## Suggested project layout
 
 ```
-anthropic-collection/
+claude-ebook/
 ├── README.md                  # this file
-├── Makefile                   # build orchestration (see "Building")
+├── Makefile                   # build orchestration (fetch/notebooks/assemble/epub/azw3)
 ├── metadata.yaml              # ebook title/author/rights
-├── manifest.txt               # reading order — one source path per line
-├── anthropic_resources.py     # llms.txt + GitHub harvester
+├── manifest.txt               # curated reading order (8 Parts) — the source of truth
+├── anthropic_resources.py     # llms.txt + GitHub harvester -> link index
+├── fetch_docs.py              # fetch web-only docs (platform/Claude Code/essays) -> docs/
+├── build_book.py              # assembler: manifest -> normalized build/book.md
+├── test_*.py                  # unittest suites (make test)
+├── frontmatter/               # authored preface + per-Part intros
 ├── assets/
 │   └── cover.png              # optional ebook cover (1600×2560 works well)
-├── repos/                     # cloned official repositories
-│   ├── claude-cookbooks/
-│   ├── courses/
-│   ├── prompt-eng-interactive-tutorial/
-│   ├── skills/
-│   ├── anthropic-quickstarts/
-│   ├── claude-plugins-official/
+├── anthropic-collection/      # cloned official repos (git-ignored, ~666 MB)
+│   ├── claude-cookbooks/  courses/  prompt-eng-interactive-tutorial/
+│   ├── skills/  anthropic-quickstarts/  claude-plugins-official/
 │   └── modelcontextprotocol/
-├── docs/                      # fetched .md pages (platform + claude code)
-├── notes/                     # curated guidance, saved responses, link index
-├── build/                     # intermediate artifacts (generated)
-└── output/                    # final PDF / EPUB / AZW3 (generated)
+├── docs/                      # fetched .md pages (generated, git-ignored)
+├── build/                     # intermediate book.md (generated, git-ignored)
+└── output/                    # final EPUB / AZW3 (generated, git-ignored)
 ```
 
 ---
@@ -72,98 +72,77 @@ anthropic-collection/
 
 | Tool | Purpose | Install |
 |------|---------|---------|
-| **Pandoc** ≥ 3.0 | Markdown → EPUB / PDF | `apt install pandoc` or [pandoc.org](https://pandoc.org/installing.html) |
-| **TeX Live** (xelatex) | PDF engine with full Unicode | `apt install texlive-xetex texlive-fonts-recommended` |
+| **Pandoc** (2.9+ works) | Markdown → EPUB | `apt install pandoc` or [pandoc.org](https://pandoc.org/installing.html) |
 | **Calibre** (`ebook-convert`) | EPUB → AZW3 for Kindle | `apt install calibre` or [calibre-ebook.com](https://calibre-ebook.com) |
-| **Jupyter / nbconvert** | `.ipynb` → Markdown | `pip install nbconvert` |
+| **nbconvert** (via `uvx`) | `.ipynb` → Markdown | no install — `uvx --from nbconvert jupyter-nbconvert` |
 
-> On Zorin OS / Ubuntu, all four are in apt except `nbconvert` (pip). `xelatex` is preferred
-> over the default `pdflatex` because the docs contain emoji, box-drawing characters, and CJK
-> snippets that `pdflatex` chokes on.
+> The only `apt` package strictly required is **`pandoc`** (Calibre is usually already present).
+> nbconvert runs through `uvx`, so nothing is `pip install`ed. **No TeX Live** is needed because
+> PDF output is not built. The Makefile detects Pandoc 2.x vs 3.x and uses the right chapter-split
+> flag (`--epub-chapter-level=1` on 2.x, `--split-level=1` on 3.x) automatically.
 
 ---
 
 ## Build pipeline
 
-The flow is: **normalize → order → render**.
+The flow is: **fetch → normalize → assemble → render**, all wired into the `Makefile`.
 
-### 1. Normalize notebooks → Markdown
+### 1. Fetch web-only docs (`make fetch`)
 
-The cookbooks and courses ship as Jupyter notebooks. Pandoc reads Markdown, not `.ipynb`,
-so convert them in place first (outputs a `.md` beside each `.ipynb`, plus a `_files/` dir
-for any embedded images):
+`fetch_docs.py` downloads the content that isn't in any cloned repo — the Developer Platform
+and Claude Code pages (published as `.md`) and the seven engineering essays (HTML, with the
+`main-content` region extracted and converted to Markdown via Pandoc) — into `docs/`. It is
+idempotent (skips existing files; `--force` re-fetches) and **fails loud**: any page that
+can't be fetched is reported and the run exits non-zero.
 
-```bash
-find repos -name '*.ipynb' -exec jupyter nbconvert --to markdown {} +
-```
+### 2. Normalize notebooks → Markdown (`make notebooks`)
 
-### 2. Define reading order (`manifest.txt`)
-
-Pandoc concatenates inputs **in the order you list them**, so a thoughtful order is what
-separates a book from a pile of files. List one path per line; comments (`#`) and blank lines
-are fine if you strip them before passing to Pandoc (the Makefile does). A sensible spine:
-
-```
-# --- Foundations ---
-docs/intro.md
-docs/get-started.md
-notes/overview.md
-
-# --- Prompt engineering ---
-docs/prompt-engineering-overview.md
-docs/claude-prompting-best-practices.md
-repos/prompt-eng-interactive-tutorial/README.md
-
-# --- Tools & agents ---
-docs/tool-use-overview.md
-docs/agent-skills-overview.md
-notes/building-effective-agents.md
-
-# --- MCP ---
-repos/modelcontextprotocol/docs/getting-started/intro.md
-
-# --- Claude Code ---
-docs/claude-code-overview.md
-docs/claude-code-best-practices.md
-
-# --- Cookbooks & courses (longer-form) ---
-repos/claude-cookbooks/README.md
-repos/courses/README.md
-```
-
-> Keep the giant per-endpoint API reference **out** of the ebook (run the harvester with
-> `--no-api-ref`). 1,500 SDK-stub pages make a miserable book and a 50 MB PDF; keep that
-> material as searchable files on disk instead.
-
-### 3. Render EPUB, PDF, and AZW3
-
-EPUB and PDF are built directly by Pandoc from the same manifest. AZW3 is derived from the
-finished EPUB via Calibre (don't build it from Markdown directly — converting the polished
-EPUB gives a cleaner Kindle TOC):
+The cookbooks, courses, and prompting tutorial ship as Jupyter notebooks. The target converts
+the **curated** notebook set (the directories the manifest draws from — not all 196) to `.md`
+in place via `uvx`, so no Jupyter install is needed:
 
 ```bash
-# EPUB
-pandoc metadata.yaml $(grep -v '^#' manifest.txt | grep .) \
-  --toc --toc-depth=2 --split-level=1 \
-  --resource-path=.:repos:docs \
-  --epub-cover-image=assets/cover.png \
-  -o output/anthropic-guide.epub
-
-# PDF (xelatex)
-pandoc metadata.yaml $(grep -v '^#' manifest.txt | grep .) \
-  --toc --toc-depth=2 --pdf-engine=xelatex \
-  --resource-path=.:repos:docs \
-  -V geometry:margin=1in -V colorlinks=true \
-  -V mainfont="DejaVu Sans" -V monofont="DejaVu Sans Mono" \
-  -o output/anthropic-guide.pdf
-
-# AZW3 (from the EPUB) — set the profile to your device
-ebook-convert output/anthropic-guide.epub output/anthropic-guide.azw3 \
-  --output-profile kindle_pw
+find <curated dirs> -name '*.ipynb' -print0 \
+  | xargs -0 uvx --from nbconvert jupyter-nbconvert --to markdown
 ```
 
-`--output-profile` tunes margins/hyphenation for the target device — `kindle_pw` for
-Paperwhite, `kindle_oasis`, or `kindle` for older models.
+### 3. Assemble one cohesive `book.md` (`build_book.py`)
+
+Rather than handing Pandoc a flat file list, `build_book.py` reads `manifest.txt` and produces
+a single normalized `build/book.md`. For every source it **demotes headings** (each Part
+becomes an H1 chapter group, each source a chapter beneath it), **rewrites relative image
+paths** so they resolve after concatenation, **cleans MDX** (strips YAML frontmatter and JSX),
+and adds a `*Source:*` line. The manifest uses three directives:
+
+```
+PART: Part I — Foundations      # a Part divider (top-level TOC entry)
+~ frontmatter/part1.md          # authored include: inserted verbatim
+docs/platform/get-started.md    # curated source: demoted + attributed
+```
+
+This is what turns ~280 files into a book with a clean eight-part table of contents instead
+of a pile of concatenated pages. The manifest fails loud on any missing path.
+
+> Keep the giant per-endpoint API reference **out** of the ebook (the harvester's `--no-api-ref`
+> flag, and the manifest simply doesn't list it). 1,500 SDK-stub pages make a miserable book.
+
+### 4. Render EPUB + AZW3 (`make all`)
+
+Pandoc builds the EPUB from `book.md`; Calibre derives the AZW3 from the finished EPUB (cleaner
+Kindle TOC than converting Markdown directly). The Makefile picks the right chapter-split flag
+for your Pandoc version automatically.
+
+```bash
+make all     # -> output/anthropic-claude-complete-guide.{epub,azw3}
+```
+
+`ebook-convert --output-profile` tunes margins/hyphenation for the target device — `kindle_pw`
+for Paperwhite, `kindle_oasis`, or `kindle` for older models.
+
+> **Reader matters:** the EPUB is built with `pandoc -f gfm`. Pandoc 2.x's *default* `markdown`
+> reader hits exponential backtracking on a document this size (it ballooned to 54 GB RSS and
+> never finished); the `gfm` reader (linear cmark parser) builds the whole ~6 MB book in about
+> a minute at ~1 GB. Don't drop `-f gfm`. PDF is intentionally not produced.
 
 ---
 
@@ -184,58 +163,21 @@ rights: "Compiled for personal offline study. Contains material © Anthropic."
 
 ## `Makefile`
 
-Reproducible one-command builds. `make all` produces all three formats.
+The real `Makefile` lives in the repo root — see it for the exact recipes. Targets:
 
-```makefile
-TITLE     := anthropic-guide
-OUTPUT    := output
-META      := metadata.yaml
-MANIFEST  := manifest.txt
-COVER     := assets/cover.png
-RESOURCES := .:repos:docs
+| Target | Does |
+|--------|------|
+| `make fetch` | download web-only docs into `docs/` (`fetch_docs.py`) |
+| `make notebooks` | convert the curated `.ipynb` set to `.md` via `uvx` nbconvert |
+| `make assemble` | `manifest.txt` → `build/book.md` (`build_book.py`) |
+| `make epub` / `make azw3` / `make all` | render EPUB, then AZW3 from it |
+| `make test` | run the `unittest` suites |
+| `make clean` / `make distclean` | remove build artifacts (also `docs/`) |
 
-# Reading-order file list, comments/blanks stripped
-SOURCES := $(shell grep -v '^\#' $(MANIFEST) | grep .)
-
-.PHONY: all notebooks epub pdf azw3 clean
-
-all: epub pdf azw3
-
-notebooks:
-	find repos -name '*.ipynb' -exec jupyter nbconvert --to markdown {} +
-
-epub: $(OUTPUT)/$(TITLE).epub
-$(OUTPUT)/$(TITLE).epub: $(META) $(MANIFEST) $(SOURCES)
-	@mkdir -p $(OUTPUT)
-	pandoc $(META) $(SOURCES) \
-	  --toc --toc-depth=2 --split-level=1 \
-	  --resource-path=$(RESOURCES) \
-	  $(if $(wildcard $(COVER)),--epub-cover-image=$(COVER),) \
-	  -o $@
-
-pdf: $(OUTPUT)/$(TITLE).pdf
-$(OUTPUT)/$(TITLE).pdf: $(META) $(MANIFEST) $(SOURCES)
-	@mkdir -p $(OUTPUT)
-	pandoc $(META) $(SOURCES) \
-	  --toc --toc-depth=2 --pdf-engine=xelatex \
-	  --resource-path=$(RESOURCES) \
-	  -V geometry:margin=1in -V colorlinks=true \
-	  -V mainfont="DejaVu Sans" -V monofont="DejaVu Sans Mono" \
-	  -o $@
-
-azw3: $(OUTPUT)/$(TITLE).azw3
-$(OUTPUT)/$(TITLE).azw3: $(OUTPUT)/$(TITLE).epub
-	ebook-convert $< $@ --output-profile kindle_pw
-
-clean:
-	rm -rf $(OUTPUT)
-```
-
-Typical run:
+First run on a fresh clone:
 
 ```bash
-make notebooks   # once after each fresh clone/pull
-make all         # epub + pdf + azw3
+make fetch && make notebooks && make all
 ```
 
 ---
@@ -244,9 +186,10 @@ make all         # epub + pdf + azw3
 
 ```bash
 # Update cloned repos
-for d in repos/*/; do git -C "$d" pull --ff-only; done
+for d in anthropic-collection/*/; do git -C "$d" pull --ff-only; done
 
-# Re-fetch the docs that aren't in a repo
+# Re-fetch the web-only docs and the link index
+python3 fetch_docs.py --force
 python3 anthropic_resources.py --no-api-ref
 
 # Rebuild
@@ -260,18 +203,19 @@ ships docs frequently.
 
 ## Known gotchas
 
-- **Image paths across repos.** Each repo references its own relative image paths. The
-  `--resource-path=.:repos:docs` flag lets Pandoc search multiple roots, but deeply nested
-  notebook images can still miss. If a build warns about a missing image, either add its
-  parent dir to `--resource-path` or drop that file from the manifest.
-- **Long code lines in PDF.** xelatex won't wrap long unbroken code lines and they'll run off
-  the page. Add `-V geometry:landscape` for code-heavy volumes, or post-process with a
-  listings template that enables `breaklines`.
-- **Size.** The full collection (minus API ref) is large. If a single ebook feels unwieldy,
-  split the manifest into volumes (e.g. *Foundations*, *Agents & Tools*, *Claude Code*) and
-  build each separately — just point the Makefile at different manifest files.
-- **EPUB chapter splitting.** `--split-level=1` is Pandoc 3.x syntax; on Pandoc 2.x use
-  `--epub-chapter-level=1`.
+- **Curation is in `manifest.txt`.** To add, remove, or reorder content, edit the manifest —
+  not the code. It fails loud on any missing path, so a typo or a renamed source is caught
+  immediately rather than silently dropped.
+- **Image paths.** `build_book.py` rewrites relative image refs to resolve from the project
+  root, and Pandoc searches `.:anthropic-collection`. Deeply nested notebook images can still
+  miss; if a build warns about one, the source can be dropped from the manifest.
+- **Use the `gfm` reader.** The build passes `-f gfm` on purpose. Pandoc 2.x's default
+  `markdown` reader blows up exponentially on a doc this large (54 GB RSS, never finishes);
+  `gfm` builds it in ~1 minute. The Makefile already does this — don't remove it.
+- **Pandoc 2.x vs 3.x.** Chapter splitting is `--epub-chapter-level=1` on 2.x and
+  `--split-level=1` on 3.x; the Makefile detects the version and picks the right one.
+- **Size / volumes.** If one ebook feels unwieldy, split `manifest.txt` into per-theme
+  manifests and build each with `make BOOK=… MANIFEST=…` — the assembler is manifest-driven.
 
 ---
 

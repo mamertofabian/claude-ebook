@@ -63,7 +63,7 @@ DEFAULT_REPOS_DIR = os.path.join(SCRIPT_DIR, "anthropic-collection")
 # so each entry is directly fetchable as raw Markdown if you want the content.
 LLMS_SOURCES = [
     ("Claude Developer Platform", "https://platform.claude.com/llms.txt"),
-    ("Claude Code", "https://code.claude.com/docs/en/llms.txt"),
+    ("Claude Code", "https://code.claude.com/docs/llms.txt"),
     ("Model Context Protocol", "https://modelcontextprotocol.io/llms.txt"),
 ]
 
@@ -182,7 +182,8 @@ USER_AGENT = "anthropic-resources-harvester/1.0 (personal use)"
 HEADER_RE = re.compile(r"^(#{1,6})\s+(.*)$")
 LINK_RE = re.compile(
     r"^\s*-\s*\[(?P<title>[^\]]+)\]\((?P<url>[^)]+)\)"
-    r"(?:\s*[-–—]\s*(?P<desc>.*))?$"
+    # Description separator: dash (platform llms.txt) or colon (Claude Code llms.txt).
+    r"(?:\s*[-–—:]\s*(?P<desc>.*))?$"
 )
 MD_TITLE_RE = re.compile(r"^#\s+(.+)$")
 

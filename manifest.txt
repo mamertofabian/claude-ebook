@@ -1,0 +1,211 @@
+# manifest.txt — reading order for the Anthropic & Claude Complete Guide.
+#
+# Directives (parsed by build_book.py):
+#   PART: <title>   a Part divider (becomes a top-level H1 chapter group)
+#   ~ <path>        authored include: inserted verbatim (no demote/attribution)
+#   <path>          curated source: demoted to chapter level + given a Source: line
+#   # ... / blank   ignored
+#
+# Paths are relative to the project root. Fetched docs live under docs/;
+# repo content under anthropic-collection/. Keep curation here — this file is
+# the single source of truth for what goes in the book and in what order.
+
+# ----- Front matter -----
+~ frontmatter/preface.md
+
+# ============================================================
+PART: Part I — Foundations
+~ frontmatter/part1-foundations.md
+docs/platform/intro.md
+docs/platform/get-started.md
+docs/platform/build-with-claude/overview.md
+anthropic-collection/courses/anthropic_api_fundamentals/01_getting_started.md
+anthropic-collection/courses/anthropic_api_fundamentals/02_messages_format.md
+anthropic-collection/courses/anthropic_api_fundamentals/03_models.md
+anthropic-collection/courses/anthropic_api_fundamentals/04_parameters.md
+anthropic-collection/courses/anthropic_api_fundamentals/05_Streaming.md
+anthropic-collection/courses/anthropic_api_fundamentals/06_vision.md
+
+# ============================================================
+PART: Part II — Prompt Engineering
+~ frontmatter/part2-prompting.md
+anthropic-collection/prompt-eng-interactive-tutorial/Anthropic 1P/00_Tutorial_How-To.md
+anthropic-collection/prompt-eng-interactive-tutorial/Anthropic 1P/01_Basic_Prompt_Structure.md
+anthropic-collection/prompt-eng-interactive-tutorial/Anthropic 1P/02_Being_Clear_and_Direct.md
+anthropic-collection/prompt-eng-interactive-tutorial/Anthropic 1P/03_Assigning_Roles_Role_Prompting.md
+anthropic-collection/prompt-eng-interactive-tutorial/Anthropic 1P/04_Separating_Data_and_Instructions.md
+anthropic-collection/prompt-eng-interactive-tutorial/Anthropic 1P/05_Formatting_Output_and_Speaking_for_Claude.md
+anthropic-collection/prompt-eng-interactive-tutorial/Anthropic 1P/06_Precognition_Thinking_Step_by_Step.md
+anthropic-collection/prompt-eng-interactive-tutorial/Anthropic 1P/07_Using_Examples_Few-Shot_Prompting.md
+anthropic-collection/prompt-eng-interactive-tutorial/Anthropic 1P/08_Avoiding_Hallucinations.md
+anthropic-collection/prompt-eng-interactive-tutorial/Anthropic 1P/09_Complex_Prompts_from_Scratch.md
+anthropic-collection/prompt-eng-interactive-tutorial/Anthropic 1P/10.1_Appendix_Chaining Prompts.md
+anthropic-collection/prompt-eng-interactive-tutorial/Anthropic 1P/10.2_Appendix_Tool Use.md
+anthropic-collection/prompt-eng-interactive-tutorial/Anthropic 1P/10.3_Appendix_Search & Retrieval.md
+anthropic-collection/courses/real_world_prompting/01_prompting_recap.md
+anthropic-collection/courses/real_world_prompting/02_medical_prompt.md
+anthropic-collection/courses/real_world_prompting/03_prompt_engineering.md
+anthropic-collection/courses/real_world_prompting/04_call_summarizer.md
+anthropic-collection/courses/real_world_prompting/05_customer_support_ai.md
+anthropic-collection/courses/prompt_evaluations/01_intro_to_evals/01_intro_to_evals.md
+anthropic-collection/courses/prompt_evaluations/02_workbench_evals/02_workbench_evals.md
+anthropic-collection/courses/prompt_evaluations/03_code_graded_evals/03_code_graded.md
+anthropic-collection/courses/prompt_evaluations/04_code_graded_classification_evals/04_code_graded_classification_evals.md
+
+# ============================================================
+PART: Part III — Building with Claude
+~ frontmatter/part3-building.md
+docs/platform/build-with-claude/working-with-messages.md
+docs/platform/build-with-claude/context-windows.md
+docs/platform/build-with-claude/prompt-caching.md
+docs/platform/build-with-claude/context-editing.md
+docs/platform/build-with-claude/compaction.md
+docs/platform/build-with-claude/extended-thinking.md
+docs/platform/build-with-claude/adaptive-thinking.md
+docs/platform/build-with-claude/effort.md
+docs/platform/build-with-claude/task-budgets.md
+docs/platform/build-with-claude/structured-outputs.md
+docs/platform/build-with-claude/streaming.md
+docs/platform/build-with-claude/batch-processing.md
+docs/platform/build-with-claude/token-counting.md
+docs/platform/build-with-claude/citations.md
+docs/platform/build-with-claude/search-results.md
+docs/platform/build-with-claude/files.md
+docs/platform/build-with-claude/pdf-support.md
+docs/platform/build-with-claude/vision.md
+docs/platform/build-with-claude/embeddings.md
+docs/platform/build-with-claude/multilingual-support.md
+docs/platform/build-with-claude/handling-stop-reasons.md
+docs/platform/build-with-claude/skills-guide.md
+anthropic-collection/claude-cookbooks/extended_thinking/extended_thinking.md
+anthropic-collection/claude-cookbooks/extended_thinking/extended_thinking_with_tool_use.md
+anthropic-collection/claude-cookbooks/multimodal/getting_started_with_vision.md
+anthropic-collection/claude-cookbooks/multimodal/best_practices_for_vision.md
+anthropic-collection/claude-cookbooks/multimodal/reading_charts_graphs_powerpoints.md
+anthropic-collection/claude-cookbooks/multimodal/how_to_transcribe_text.md
+
+# ============================================================
+PART: Part IV — Tools & Agents
+~ frontmatter/part4-tools-agents.md
+docs/essays/building-effective-agents.md
+docs/essays/effective-context-engineering.md
+docs/essays/writing-tools-for-agents.md
+docs/essays/effective-harnesses-for-long-running-agents.md
+docs/platform/agents-and-tools/tool-use/overview.md
+docs/platform/agents-and-tools/tool-use/how-tool-use-works.md
+docs/platform/agents-and-tools/tool-use/define-tools.md
+docs/platform/agents-and-tools/tool-use/handle-tool-calls.md
+docs/platform/agents-and-tools/tool-use/tool-use-with-prompt-caching.md
+docs/platform/agents-and-tools/tool-use/parallel-tool-use.md
+docs/platform/agents-and-tools/tool-use/strict-tool-use.md
+docs/platform/agents-and-tools/tool-use/programmatic-tool-calling.md
+docs/platform/agents-and-tools/tool-use/fine-grained-tool-streaming.md
+docs/platform/agents-and-tools/tool-use/bash-tool.md
+docs/platform/agents-and-tools/tool-use/code-execution-tool.md
+docs/platform/agents-and-tools/tool-use/computer-use-tool.md
+docs/platform/agents-and-tools/tool-use/text-editor-tool.md
+docs/platform/agents-and-tools/tool-use/memory-tool.md
+docs/platform/agents-and-tools/tool-use/web-search-tool.md
+docs/platform/agents-and-tools/tool-use/web-fetch-tool.md
+docs/platform/agents-and-tools/tool-use/troubleshooting-tool-use.md
+anthropic-collection/courses/tool_use/01_tool_use_overview.md
+anthropic-collection/courses/tool_use/02_your_first_simple_tool.md
+anthropic-collection/courses/tool_use/03_structured_outputs.md
+anthropic-collection/courses/tool_use/04_complete_workflow.md
+anthropic-collection/courses/tool_use/05_tool_choice.md
+anthropic-collection/courses/tool_use/06_chatbot_with_multiple_tools.md
+anthropic-collection/claude-cookbooks/patterns/agents/basic_workflows.md
+anthropic-collection/claude-cookbooks/patterns/agents/orchestrator_workers.md
+anthropic-collection/claude-cookbooks/patterns/agents/evaluator_optimizer.md
+anthropic-collection/claude-cookbooks/patterns/agents/async_multi_agent_orchestration.md
+anthropic-collection/claude-cookbooks/claude_agent_sdk/00_The_one_liner_research_agent.md
+anthropic-collection/claude-cookbooks/claude_agent_sdk/01_The_chief_of_staff_agent.md
+anthropic-collection/claude-cookbooks/claude_agent_sdk/02_The_observability_agent.md
+anthropic-collection/claude-cookbooks/claude_agent_sdk/03_The_site_reliability_agent.md
+anthropic-collection/claude-cookbooks/managed_agents/CMA_explore_unfamiliar_codebase.md
+anthropic-collection/claude-cookbooks/managed_agents/CMA_orchestrate_issue_to_pr.md
+anthropic-collection/claude-cookbooks/managed_agents/CMA_coordinate_specialist_team.md
+
+# ============================================================
+PART: Part V — Agent Skills
+~ frontmatter/part5-skills.md
+docs/essays/equipping-agents-with-skills.md
+docs/platform/agents-and-tools/agent-skills/overview.md
+docs/platform/agents-and-tools/agent-skills/quickstart.md
+docs/platform/agents-and-tools/agent-skills/best-practices.md
+docs/platform/agents-and-tools/agent-skills/enterprise.md
+anthropic-collection/skills/README.md
+anthropic-collection/skills/spec/agent-skills-spec.md
+
+# ============================================================
+PART: Part VI — Model Context Protocol
+~ frontmatter/part6-mcp.md
+docs/essays/introducing-mcp.md
+anthropic-collection/modelcontextprotocol/docs/docs/getting-started/intro.mdx
+anthropic-collection/modelcontextprotocol/docs/docs/learn/architecture.mdx
+anthropic-collection/modelcontextprotocol/docs/docs/learn/server-concepts.mdx
+anthropic-collection/modelcontextprotocol/docs/docs/learn/client-concepts.mdx
+anthropic-collection/modelcontextprotocol/docs/docs/develop/build-server.mdx
+anthropic-collection/modelcontextprotocol/docs/docs/develop/build-client.mdx
+anthropic-collection/modelcontextprotocol/docs/docs/develop/connect-remote-servers.mdx
+docs/platform/agents-and-tools/remote-mcp-servers.md
+docs/platform/agents-and-tools/mcp-connector.md
+
+# ============================================================
+PART: Part VII — Claude Code
+~ frontmatter/part7-claude-code.md
+docs/essays/claude-code-best-practices.md
+docs/claude-code/overview.md
+docs/claude-code/quickstart.md
+docs/claude-code/how-claude-code-works.md
+docs/claude-code/features-overview.md
+docs/claude-code/setup.md
+docs/claude-code/common-workflows.md
+docs/claude-code/best-practices.md
+docs/claude-code/interactive-mode.md
+docs/claude-code/cli-reference.md
+docs/claude-code/memory.md
+docs/claude-code/settings.md
+docs/claude-code/model-config.md
+docs/claude-code/output-styles.md
+docs/claude-code/statusline.md
+docs/claude-code/commands.md
+docs/claude-code/sub-agents.md
+docs/claude-code/skills.md
+docs/claude-code/hooks.md
+docs/claude-code/plugins.md
+docs/claude-code/mcp.md
+docs/claude-code/permissions.md
+docs/claude-code/permission-modes.md
+docs/claude-code/checkpointing.md
+docs/claude-code/costs.md
+docs/claude-code/sandboxing.md
+docs/claude-code/security.md
+docs/claude-code/headless.md
+docs/claude-code/github-actions.md
+docs/claude-code/troubleshooting.md
+docs/claude-code/agent-sdk/overview.md
+docs/claude-code/agent-sdk/quickstart.md
+docs/claude-code/agent-sdk/agent-loop.md
+docs/claude-code/agent-sdk/custom-tools.md
+docs/claude-code/agent-sdk/permissions.md
+docs/claude-code/agent-sdk/sessions.md
+docs/claude-code/agent-sdk/subagents.md
+docs/claude-code/agent-sdk/skills.md
+docs/claude-code/agent-sdk/slash-commands.md
+docs/claude-code/agent-sdk/streaming-output.md
+docs/claude-code/agent-sdk/mcp.md
+docs/claude-code/agent-sdk/cost-tracking.md
+
+# ============================================================
+PART: Part VIII — Cookbooks & Recipes
+~ frontmatter/part8-cookbooks.md
+anthropic-collection/claude-cookbooks/capabilities/retrieval_augmented_generation/guide.md
+anthropic-collection/claude-cookbooks/capabilities/contextual-embeddings/guide.md
+anthropic-collection/claude-cookbooks/capabilities/summarization/guide.md
+anthropic-collection/claude-cookbooks/capabilities/classification/guide.md
+anthropic-collection/claude-cookbooks/capabilities/knowledge_graph/guide.md
+anthropic-collection/claude-cookbooks/capabilities/text_to_sql/guide.md
+anthropic-collection/claude-cookbooks/coding/prompting_for_frontend_aesthetics.md
+anthropic-collection/claude-cookbooks/finetuning/finetuning_on_bedrock.md
+anthropic-collection/claude-cookbooks/observability/usage_cost_api.md
