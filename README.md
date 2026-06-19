@@ -8,6 +8,19 @@ This repo is both the *collection* and the *build system* that turns it into ebo
 
 ---
 
+> **📌 Status: this README is currently a build guide / blueprint, not a description of finished tooling.**
+>
+> What exists today: the resource harvester (`anthropic_resources.py`), its generated index
+> (`anthropic_resources.{md,json,csv}`), and the cloned official repos under
+> `anthropic-collection/`. The ebook pipeline below — `metadata.yaml`, `manifest.txt`, the
+> `Makefile`, and the Pandoc/Calibre build — is the **planned design**; those files are not in
+> the repo yet. Sections describing them are the spec to implement against.
+>
+> As we build each piece, update this README to match, removing it from "planned" once it's
+> real. The goal is for this file to converge on an accurate description of the codebase.
+
+---
+
 ## What's in here
 
 The collection is assembled from three kinds of official, first-party sources:
