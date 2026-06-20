@@ -7,6 +7,7 @@ docs/
 # Ebook build artifacts
 build/
 output/
+tmp/
 *.epub
 *.pdf
 *.azw3

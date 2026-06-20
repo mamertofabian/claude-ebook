@@ -1,0 +1,76 @@
+<!doctype html>
+<!--
+  Cover source for "Building with Claude" (1600x2560).
+  Render to assets/cover.png with:  make cover
+  (headless Chrome; uses Google Fonts, so it needs network for the Fraunces/Inter
+  webfonts — falls back to local serif/sans if offline.)
+  The illustration assets/cover-art.png is a transparent PNG.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap');
+
+  :root{
+    --cream:#F4ECE0;
+    --cream-dim:rgba(244,236,224,.74);
+    --cream-faint:rgba(244,236,224,.46);
+    --coral:#E8836B;
+    --amber:#E7A86A;
+    --teal:#79C9C2;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{width:1600px;height:2560px;overflow:hidden;}
+  body{
+    font-family:'Inter',system-ui,'DejaVu Sans',sans-serif;
+    background:radial-gradient(125% 72% at 50% 37%, #20305299 0%, #131d33 0%, #101a2f 50%, #0b1322 76%, #0a111e 100%);
+    color:var(--cream); position:relative;
+  }
+  body::before{ /* warm center bloom behind art */
+    content:""; position:absolute; left:50%; top:46%; transform:translate(-50%,-50%);
+    width:1180px; height:1180px; border-radius:50%;
+    background:radial-gradient(circle, rgba(232,131,107,.22) 0%, rgba(231,168,106,.10) 38%, rgba(10,17,30,0) 68%);
+  }
+  .frame{ position:absolute; inset:62px; border:1.5px solid rgba(232,131,107,.26); border-radius:10px; pointer-events:none;}
+  .stage{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; padding:196px 150px 152px;}
+
+  .title{ font-family:'Fraunces','Georgia',serif; text-align:center; line-height:.95;}
+  .title .l1{ display:block; font-weight:400; font-size:120px; color:var(--cream); letter-spacing:.004em;}
+  .title .l2{ display:block; font-weight:600; font-size:196px; color:var(--cream); letter-spacing:.004em;}
+  .rule{ width:122px; height:3px; background:var(--coral); margin:48px 0 30px; border-radius:2px;}
+  .sub-guide{ font-weight:600; font-size:42px; letter-spacing:.36em; text-transform:uppercase; color:var(--amber); padding-left:.36em;}
+
+  .art-wrap{ flex:1 1 auto; width:100%; display:flex; align-items:center; justify-content:center;}
+  .art{ width:980px; height:auto;}
+
+  .footer{ display:flex; flex-direction:column; align-items:center; text-align:center;}
+  .tags{ font-weight:500; font-size:35px; color:var(--cream-dim); line-height:1.5; max-width:1140px;}
+  .tags .dot{ color:var(--coral); padding:0 .32em;}
+  .study{ font-weight:400; font-size:30px; color:var(--cream-faint); margin-top:24px;}
+  .foot-rule{ width:64px; height:2px; background:rgba(244,236,224,.26); margin:40px 0 26px;}
+  .edition{ font-weight:600; font-size:28px; letter-spacing:.46em; text-transform:uppercase; color:var(--teal); padding-left:.46em;}
+</style>
+</head>
+<body>
+  <div class="frame"></div>
+  <div class="stage">
+    <h1 class="title"><span class="l1">Building with</span><span class="l2">Claude</span></h1>
+    <div class="rule"></div>
+    <div class="sub-guide">The Complete Guide</div>
+
+    <div class="art-wrap">
+      <img class="art" src="cover-art.png" alt="">
+    </div>
+
+    <div class="footer">
+      <div class="tags">
+        Official docs <span class="dot">·</span> cookbooks <span class="dot">·</span> courses <span class="dot">·</span> tools <span class="dot">·</span> agents <span class="dot">·</span> MCP <span class="dot">·</span> Claude&nbsp;Code
+      </div>
+      <div class="study">Compiled from official Anthropic sources, for offline study</div>
+      <div class="foot-rule"></div>
+      <div class="edition">Personal Offline Study Edition</div>
+    </div>
+  </div>
+</body>
+</html>

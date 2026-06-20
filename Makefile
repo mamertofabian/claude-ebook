@@ -1,11 +1,11 @@
-# Makefile — build the Anthropic & Claude Complete Guide (EPUB + AZW3).
+# Makefile — build the "Building with Claude" ebook (EPUB + AZW3).
 #
 # Pipeline:  fetch + notebooks  ->  assemble (build/book.md)  ->  epub  ->  azw3
 #
 # Requires: pandoc (EPUB), calibre/ebook-convert (AZW3), uvx (nbconvert),
 #           python3. PDF is intentionally not built (no TeX dependency).
 
-TITLE     := anthropic-claude-complete-guide
+TITLE     := building-with-claude
 OUTPUT    := output
 BUILD     := build
 META      := metadata.yaml
@@ -35,9 +35,17 @@ NB_DIRS := \
   $(COLLECTION)/claude-cookbooks/finetuning \
   $(COLLECTION)/claude-cookbooks/observability
 
-.PHONY: all fetch notebooks assemble epub azw3 test clean distclean
+.PHONY: all fetch notebooks assemble epub azw3 cover test clean distclean
 
 all: epub azw3
+
+# Re-render the cover PNG from assets/cover.html (text) + assets/cover-art.png
+# (illustration) via headless Chrome. Only needed when the cover design changes;
+# assets/cover.png is committed so normal builds don't require Chrome.
+cover:
+	google-chrome --headless=new --disable-gpu --no-sandbox --hide-scrollbars \
+	  --force-device-scale-factor=1 --window-size=1600,2560 \
+	  --screenshot=$(COVER) "file://$(CURDIR)/assets/cover.html"
 
 # 1. Fetch web-only docs (platform, Claude Code, engineering essays) into docs/.
 fetch:

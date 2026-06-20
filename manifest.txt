@@ -1,4 +1,4 @@
-# manifest.txt — reading order for the Anthropic & Claude Complete Guide.
+# manifest.txt — reading order for the "Building with Claude" ebook.
 #
 # Directives (parsed by build_book.py):
 #   PART: <title>   a Part divider (becomes a top-level H1 chapter group)

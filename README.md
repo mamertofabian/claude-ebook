@@ -1,4 +1,4 @@
-# Anthropic & Claude — Official Resource Collection
+# Building with Claude — Offline Ebook & Build System
 
 A personal, offline-readable compilation of Anthropic's official Claude documentation,
 cookbooks, courses, and engineering guidance — built into a single cohesive **EPUB** and
@@ -133,7 +133,7 @@ Kindle TOC than converting Markdown directly). The Makefile picks the right chap
 for your Pandoc version automatically.
 
 ```bash
-make all     # -> output/anthropic-claude-complete-guide.{epub,azw3}
+make all     # -> output/building-with-claude.{epub,azw3}
 ```
 
 `ebook-convert --output-profile` tunes margins/hyphenation for the target device — `kindle_pw`
@@ -150,12 +150,12 @@ for Paperwhite, `kindle_oasis`, or `kindle` for older models.
 
 ```yaml
 ---
-title: "Anthropic & Claude — Official Resource Collection"
-subtitle: "Documentation, cookbooks, courses, and engineering notes"
-author: "<your name>"
+title: "Building with Claude"
+subtitle: "The Complete Guide — Anthropic's official documentation, cookbooks, courses, and engineering notes, compiled for offline study"
+author: "Compiled from official Anthropic sources"
 date: "2026-06-20"
 lang: en-US
-rights: "Compiled for personal offline study. Contains material © Anthropic."
+rights: "Compiled for personal offline study. Contains material © Anthropic and the respective repository licenses."
 ---
 ```
 
