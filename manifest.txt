@@ -51,6 +51,7 @@ anthropic-collection/courses/prompt_evaluations/01_intro_to_evals/01_intro_to_ev
 anthropic-collection/courses/prompt_evaluations/02_workbench_evals/02_workbench_evals.md
 anthropic-collection/courses/prompt_evaluations/03_code_graded_evals/03_code_graded.md
 anthropic-collection/courses/prompt_evaluations/04_code_graded_classification_evals/04_code_graded_classification_evals.md
+docs/blog/best-practices-for-prompt-engineering.md
 
 # ============================================================
 PART: Part III — Building with Claude
@@ -91,6 +92,15 @@ docs/essays/building-effective-agents.md
 docs/essays/effective-context-engineering.md
 docs/essays/writing-tools-for-agents.md
 docs/essays/effective-harnesses-for-long-running-agents.md
+docs/essays/multi-agent-research-system.md
+docs/essays/the-think-tool.md
+docs/essays/demystifying-evals-for-agents.md
+docs/blog/common-workflow-patterns-for-ai-agents-and-when-to-use-them.md
+docs/blog/building-multi-agent-systems-when-and-how-to-use-them.md
+docs/blog/multi-agent-coordination-patterns.md
+docs/blog/seeing-like-an-agent.md
+docs/blog/the-advisor-strategy.md
+docs/blog/building-agents-that-reach-production-systems-with-mcp.md
 docs/platform/agents-and-tools/tool-use/overview.md
 docs/platform/agents-and-tools/tool-use/how-tool-use-works.md
 docs/platform/agents-and-tools/tool-use/define-tools.md
@@ -103,6 +113,7 @@ docs/platform/agents-and-tools/tool-use/fine-grained-tool-streaming.md
 docs/platform/agents-and-tools/tool-use/bash-tool.md
 docs/platform/agents-and-tools/tool-use/code-execution-tool.md
 docs/platform/agents-and-tools/tool-use/computer-use-tool.md
+docs/blog/best-practices-for-computer-and-browser-use-with-claude.md
 docs/platform/agents-and-tools/tool-use/text-editor-tool.md
 docs/platform/agents-and-tools/tool-use/memory-tool.md
 docs/platform/agents-and-tools/tool-use/web-search-tool.md
@@ -118,10 +129,12 @@ anthropic-collection/claude-cookbooks/patterns/agents/basic_workflows.md
 anthropic-collection/claude-cookbooks/patterns/agents/orchestrator_workers.md
 anthropic-collection/claude-cookbooks/patterns/agents/evaluator_optimizer.md
 anthropic-collection/claude-cookbooks/patterns/agents/async_multi_agent_orchestration.md
+docs/blog/building-agents-with-the-claude-agent-sdk.md
 anthropic-collection/claude-cookbooks/claude_agent_sdk/00_The_one_liner_research_agent.md
 anthropic-collection/claude-cookbooks/claude_agent_sdk/01_The_chief_of_staff_agent.md
 anthropic-collection/claude-cookbooks/claude_agent_sdk/02_The_observability_agent.md
 anthropic-collection/claude-cookbooks/claude_agent_sdk/03_The_site_reliability_agent.md
+docs/essays/managed-agents.md
 anthropic-collection/claude-cookbooks/managed_agents/CMA_explore_unfamiliar_codebase.md
 anthropic-collection/claude-cookbooks/managed_agents/CMA_orchestrate_issue_to_pr.md
 anthropic-collection/claude-cookbooks/managed_agents/CMA_coordinate_specialist_team.md
@@ -134,6 +147,11 @@ docs/platform/agents-and-tools/agent-skills/overview.md
 docs/platform/agents-and-tools/agent-skills/quickstart.md
 docs/platform/agents-and-tools/agent-skills/best-practices.md
 docs/platform/agents-and-tools/agent-skills/enterprise.md
+docs/blog/how-to-create-skills-key-steps-limitations-and-examples.md
+docs/blog/skills-explained.md
+docs/blog/building-agents-with-skills-equipping-agents-for-specialized-work.md
+docs/blog/improving-skill-creator-test-measure-and-refine-agent-skills.md
+docs/blog/extending-claude-capabilities-with-skills-mcp-servers.md
 anthropic-collection/skills/README.md
 anthropic-collection/skills/spec/agent-skills-spec.md
 
@@ -141,6 +159,7 @@ anthropic-collection/skills/spec/agent-skills-spec.md
 PART: Part VI — Model Context Protocol
 ~ frontmatter/part6-mcp.md
 docs/essays/introducing-mcp.md
+docs/blog/what-is-model-context-protocol.md
 anthropic-collection/modelcontextprotocol/docs/docs/getting-started/intro.mdx
 anthropic-collection/modelcontextprotocol/docs/docs/learn/architecture.mdx
 anthropic-collection/modelcontextprotocol/docs/docs/learn/server-concepts.mdx
@@ -150,11 +169,15 @@ anthropic-collection/modelcontextprotocol/docs/docs/develop/build-client.mdx
 anthropic-collection/modelcontextprotocol/docs/docs/develop/connect-remote-servers.mdx
 docs/platform/agents-and-tools/remote-mcp-servers.md
 docs/platform/agents-and-tools/mcp-connector.md
+docs/essays/code-execution-with-mcp.md
+docs/essays/desktop-extensions.md
 
 # ============================================================
 PART: Part VII — Claude Code
 ~ frontmatter/part7-claude-code.md
 docs/essays/claude-code-best-practices.md
+docs/blog/introduction-to-agentic-coding.md
+docs/blog/how-claude-code-works-in-large-codebases-best-practices-and-where-to-start.md
 docs/claude-code/overview.md
 docs/claude-code/quickstart.md
 docs/claude-code/how-claude-code-works.md
@@ -196,11 +219,18 @@ docs/claude-code/agent-sdk/slash-commands.md
 docs/claude-code/agent-sdk/streaming-output.md
 docs/claude-code/agent-sdk/mcp.md
 docs/claude-code/agent-sdk/cost-tracking.md
+docs/blog/steering-claude-code-skills-hooks-rules-subagents-and-more.md
+docs/blog/a-harness-for-every-task-dynamic-workflows-in-claude-code.md
+docs/blog/using-claude-code-session-management-and-1m-context.md
+docs/blog/beyond-permission-prompts-making-claude-code-more-secure-and-autonomous.md
+docs/blog/lessons-from-building-claude-code-how-we-use-skills.md
+docs/blog/lessons-from-building-claude-code-prompt-caching-is-everything.md
 
 # ============================================================
 PART: Part VIII — Cookbooks & Recipes
 ~ frontmatter/part8-cookbooks.md
 anthropic-collection/claude-cookbooks/capabilities/retrieval_augmented_generation/guide.md
+docs/essays/contextual-retrieval.md
 anthropic-collection/claude-cookbooks/capabilities/contextual-embeddings/guide.md
 anthropic-collection/claude-cookbooks/capabilities/summarization/guide.md
 anthropic-collection/claude-cookbooks/capabilities/classification/guide.md

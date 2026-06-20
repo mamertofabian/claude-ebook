@@ -7,6 +7,7 @@ import unittest
 
 from fetch_docs import (
     clean_essay_markdown,
+    extract_blog_content,
     extract_main_content,
     local_path_for,
     rewrite_doc_image_urls,
@@ -108,6 +109,55 @@ class ExtractMainContentTest(unittest.TestCase):
     def test_returns_original_when_no_main_content(self):
         html = "<div><h1>x</h1></div>"
         self.assertEqual(extract_main_content(html), html)
+
+
+class ExtractBlogContentTest(unittest.TestCase):
+    # The claude.com blog is a Webflow site: the article title is an
+    # <h1 class="u-text-style-h1"> in the hero, and the body is the first
+    # <div class="blog_post_content_wrap">. Everything else (nav, hero CTAs,
+    # related-posts cards, footer) is chrome to drop.
+
+    def _page(self):
+        # The body is split across several `u-rich-text-blog` fields (Webflow
+        # breaks the prose up around images/section blocks). All must be
+        # captured; the related-posts section's rich text must not be.
+        return (
+            "<header><nav>menu link</nav></header>"
+            '<h1 class="u-text-style-h1">Post Title</h1>'
+            '<div class="hero_blog_post_details_content">By Author</div>'
+            '<div class="blog_post_content_wrap">'
+            '<div class="u-rich-text-blog"><p>First body <a href="/x">para</a>.</p>'
+            "<div>nested block</div></div></div>"
+            "<figure>image between sections</figure>"
+            '<div class="blog_post_content_wrap">'
+            '<div class="u-rich-text-blog"><p>Second body block.</p></div></div>'
+            '<div class="blog_related_section_wrap">'
+            '<div class="u-rich-text-blog">related junk</div></div>'
+            "<footer>footer links</footer>"
+        )
+
+    def test_captures_title_and_all_body_blocks(self):
+        out = extract_blog_content(self._page())
+        self.assertIn("Post Title", out)
+        self.assertIn("First body", out)
+        self.assertIn("nested block", out)
+        self.assertIn("Second body block", out)
+
+    def test_drops_nav_footer_and_hero_chrome(self):
+        out = extract_blog_content(self._page())
+        self.assertNotIn("menu link", out)
+        self.assertNotIn("footer links", out)
+        self.assertNotIn("By Author", out)
+        self.assertNotIn("image between sections", out)
+
+    def test_excludes_related_section_rich_text(self):
+        out = extract_blog_content(self._page())
+        self.assertNotIn("related junk", out)
+
+    def test_returns_empty_when_markers_absent(self):
+        # No blog markers -> empty, so the caller's length check fails loud
+        # rather than dumping the whole page into the book.
+        self.assertEqual(extract_blog_content("<div><p>plain page</p></div>"), "")
 
 
 class CleanEssayMarkdownTest(unittest.TestCase):

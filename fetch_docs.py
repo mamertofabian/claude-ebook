@@ -137,7 +137,64 @@ ESSAYS = [
         "equipping-agents-with-skills",
         "https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills",
     ),
+    (
+        "multi-agent-research-system",
+        "https://www.anthropic.com/engineering/multi-agent-research-system",
+    ),
+    ("the-think-tool", "https://www.anthropic.com/engineering/claude-think-tool"),
+    (
+        "demystifying-evals-for-agents",
+        "https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents",
+    ),
+    ("managed-agents", "https://www.anthropic.com/engineering/managed-agents"),
+    (
+        "code-execution-with-mcp",
+        "https://www.anthropic.com/engineering/code-execution-with-mcp",
+    ),
+    (
+        "desktop-extensions",
+        "https://www.anthropic.com/engineering/desktop-extensions",
+    ),
     ("introducing-mcp", "https://www.anthropic.com/news/model-context-protocol"),
+    (
+        "contextual-retrieval",
+        "https://www.anthropic.com/news/contextual-retrieval",
+    ),
+]
+
+# claude.com/blog posts (Webflow HTML) — curated evergreen, technical articles.
+# Slug == URL slug; the file lands at docs/blog/<slug>.md. Marketing, product
+# launches, model announcements, and case studies are intentionally excluded.
+BLOG_BASE_URL = "https://claude.com/blog/"
+BLOG_SLUGS = [
+    # Prompt engineering
+    "best-practices-for-prompt-engineering",
+    # Tools & agents
+    "building-multi-agent-systems-when-and-how-to-use-them",
+    "common-workflow-patterns-for-ai-agents-and-when-to-use-them",
+    "multi-agent-coordination-patterns",
+    "building-agents-that-reach-production-systems-with-mcp",
+    "best-practices-for-computer-and-browser-use-with-claude",
+    "building-agents-with-the-claude-agent-sdk",
+    "seeing-like-an-agent",
+    "the-advisor-strategy",
+    # Agent Skills
+    "how-to-create-skills-key-steps-limitations-and-examples",
+    "skills-explained",
+    "building-agents-with-skills-equipping-agents-for-specialized-work",
+    "improving-skill-creator-test-measure-and-refine-agent-skills",
+    "extending-claude-capabilities-with-skills-mcp-servers",
+    # MCP
+    "what-is-model-context-protocol",
+    # Claude Code
+    "introduction-to-agentic-coding",
+    "how-claude-code-works-in-large-codebases-best-practices-and-where-to-start",
+    "a-harness-for-every-task-dynamic-workflows-in-claude-code",
+    "steering-claude-code-skills-hooks-rules-subagents-and-more",
+    "lessons-from-building-claude-code-how-we-use-skills",
+    "lessons-from-building-claude-code-prompt-caching-is-everything",
+    "using-claude-code-session-management-and-1m-context",
+    "beyond-permission-prompts-making-claude-code-more-secure-and-autonomous",
 ]
 
 
@@ -272,6 +329,101 @@ def extract_main_content(html):
     return "".join(parser.parts) if parser.found else html
 
 
+# Webflow wrappers that mark the end of the article (related posts / marginalia);
+# any rich-text field at/after one of these is page chrome, not article content.
+_BLOG_END_MARKERS = ("blog_related_section_wrap", "blog_post_marginalia_wrap")
+
+
+class _BlogContentExtractor(HTMLParser):
+    """Pull the article out of a claude.com (Webflow) blog post.
+
+    The title is an ``<h1 class="u-text-style-h1">`` in the hero. The body is
+    spread across one or more ``<div class="u-rich-text-blog">`` rich-text
+    fields (Webflow splits the prose around images/section blocks) — all are
+    captured, depth-tracked, and concatenated. Everything else (nav, hero
+    CTAs/byline, inter-section visuals, related-posts cards, footer) is left
+    behind, and capture stops once a related/marginalia section is reached.
+    """
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.h1, self.body = [], []
+        self._cap_h1 = False
+        self._got_h1 = False
+        self._cap_rt = False
+        self._rt_depth = 0
+        self._stopped = False
+
+    @staticmethod
+    def _cls(attrs):
+        return dict(attrs).get("class", "")
+
+    def handle_starttag(self, tag, attrs):
+        cls = self._cls(attrs)
+        if tag == "div" and any(m in cls for m in _BLOG_END_MARKERS):
+            self._stopped = True
+        if (
+            not self._stopped
+            and not self._got_h1
+            and not self._cap_h1
+            and tag == "h1"
+            and "u-text-style-h1" in cls
+        ):
+            self._cap_h1 = True
+        if (
+            not self._stopped
+            and not self._cap_rt
+            and tag == "div"
+            and "u-rich-text-blog" in cls
+        ):
+            self._cap_rt = True
+            self._rt_depth = 0
+        if self._cap_h1:
+            self.h1.append(self.get_starttag_text() or f"<{tag}>")
+        if self._cap_rt:
+            if tag == "div":
+                self._rt_depth += 1
+            self.body.append(self.get_starttag_text() or f"<{tag}>")
+
+    def handle_startendtag(self, tag, attrs):
+        if self._cap_h1:
+            self.h1.append(self.get_starttag_text() or f"<{tag}/>")
+        if self._cap_rt:
+            self.body.append(self.get_starttag_text() or f"<{tag}/>")
+
+    def handle_endtag(self, tag):
+        if self._cap_h1:
+            self.h1.append(f"</{tag}>")
+            if tag == "h1":
+                self._cap_h1 = False
+                self._got_h1 = True
+        if self._cap_rt:
+            self.body.append(f"</{tag}>")
+            if tag == "div":
+                self._rt_depth -= 1
+                if self._rt_depth == 0:
+                    self._cap_rt = False
+
+    def handle_data(self, data):
+        if self._cap_h1:
+            self.h1.append(data)
+        if self._cap_rt:
+            self.body.append(data)
+
+
+def extract_blog_content(html):
+    """Return the article's title + body HTML from a claude.com blog post.
+
+    Empty string when the blog markers are absent, so the caller fails loud
+    instead of dumping the whole page (nav/footer/related) into the book.
+    """
+    parser = _BlogContentExtractor()
+    parser.feed(html)
+    if not parser.body:
+        return ""
+    return "".join(parser.h1) + "\n" + "".join(parser.body)
+
+
 def _is_standalone_tag_line(line):
     s = line.strip()
     return s.startswith("<") and s.endswith(">") and "](" not in s
@@ -391,6 +543,33 @@ def fetch_essays(out_dir, force, failures):
     return written
 
 
+def fetch_blog(out_dir, force, failures):
+    written = 0
+    for slug in BLOG_SLUGS:
+        dest = f"{out_dir}/blog/{slug}.md"
+        if not force and os.path.isfile(dest):
+            written += 1
+            continue
+        url = BLOG_BASE_URL + slug
+        try:
+            html = fetch(url)
+            fragment = extract_blog_content(html)
+            if not fragment:
+                raise RuntimeError("blog article markers not found")
+            md = clean_essay_markdown(_html_to_markdown(fragment))
+            md = rewrite_doc_image_urls(md, _origin_of(url))
+            if len(md) < 400:
+                raise RuntimeError(
+                    f"blog post too short after extraction ({len(md)} B)"
+                )
+            _write(dest, md)
+            written += 1
+            print(f"  [blog] {dest}", file=sys.stderr)
+        except Exception as e:  # noqa: BLE001 - fail-loud, collected below
+            failures.append(f"{url}: {e}")
+    return written
+
+
 def main():
     ap = argparse.ArgumentParser(description="Fetch web-only Claude docs into docs/.")
     ap.add_argument("--out-dir", default="docs")
@@ -431,8 +610,12 @@ def main():
     print("[*] Engineering essays...", file=sys.stderr)
     n_essay = fetch_essays(args.out_dir, args.force, failures)
 
+    print("[*] Blog posts...", file=sys.stderr)
+    n_blog = fetch_blog(args.out_dir, args.force, failures)
+
     print(
-        f"[✓] platform:{n_platform}  claude-code:{n_cc}  essays:{n_essay}",
+        f"[✓] platform:{n_platform}  claude-code:{n_cc}  "
+        f"essays:{n_essay}  blog:{n_blog}",
         file=sys.stderr,
     )
     if failures:

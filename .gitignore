@@ -30,6 +30,9 @@ dist/
 # Local research notes — kept on disk, not published
 sources.md
 
+# Downloaded PDF ebooks/guides for reference — local only
+pdf-ebooks/
+
 # Session-local agent notes
 .claude/insights/
 
