@@ -226,3 +226,10 @@ material. Each source remains under its original license/copyright (© Anthropic
 respective repo licenses). Keep it for your own use; don't redistribute the compiled ebooks.
 When in doubt, the canonical, always-current versions live at
 `docs.claude.com` / `code.claude.com` and `github.com/anthropics`.
+
+**Licensing split:** the **build tooling** in this repo (the scripts, Makefile, manifest,
+front matter, and tests) is MIT-licensed — see [`LICENSE`](LICENSE). That license covers the
+code only. It does **not** cover the third-party content the tooling fetches or compiles, nor
+the generated EPUB/AZW3 — those stay under Anthropic's and the source repos' own licenses and
+are intentionally git-ignored (`docs/`, `anthropic-collection/`, `output/`). Open-source the
+tool freely; don't redistribute the content it assembles.
