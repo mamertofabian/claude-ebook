@@ -15,6 +15,7 @@ from build_book import (
     preprocess_mdx,
     rewrite_image_paths,
     strip_jsx,
+    strip_standalone_html_tags,
     strip_yaml_frontmatter,
 )
 
@@ -138,6 +139,23 @@ class MdxTest(unittest.TestCase):
         self.assertNotIn("<Note>", out)
         self.assertNotIn("---", out)
 
+    def test_strip_standalone_html_tags_removes_wrapper_lines(self):
+        md = (
+            '<section title="X">\n'
+            "```bash\n# a comment\n```\n"
+            "</section>\n"
+            "keep <Note>inline</Note> text\n"
+        )
+        out = strip_standalone_html_tags(md)
+        self.assertNotIn("<section", out)
+        self.assertNotIn("</section>", out)
+        self.assertIn("# a comment", out)  # code fence content untouched
+        self.assertIn("keep <Note>inline</Note> text", out)  # inline tag kept
+
+    def test_strip_standalone_html_tags_keeps_tags_in_code(self):
+        md = "```\n<section title='x'>\n```\n"
+        self.assertEqual(strip_standalone_html_tags(md), md)
+
 
 class AssembleTest(unittest.TestCase):
     def test_builds_parts_with_demoted_sources(self):
@@ -163,6 +181,24 @@ class AssembleTest(unittest.TestCase):
         self.assertIn("## Architecture", book)
         self.assertIn("MCP body", book)
         self.assertNotIn("<Note>", book)
+
+    def test_fetched_platform_doc_is_jsx_cleaned(self):
+        # platform.claude.com / code.claude.com pages are MDX-flavored: a
+        # <CodeGroup> with no blank line after it starts an HTML block that
+        # swallows the following ``` fence, leaking code comments as headings.
+        entries = [
+            {"type": "part", "title": "III"},
+            {
+                "type": "source",
+                "path": "docs/platform/build-with-claude/caching.md",
+                "authored": False,
+            },
+        ]
+        raw = "# Caching\n\n<CodeGroup>\n```bash\n# a comment\nprintf hi\n```\n</CodeGroup>\n"
+        book = assemble(entries, read_text=lambda p: raw, root=".")
+        self.assertNotIn("<CodeGroup>", book)
+        self.assertIn("## Caching", book)
+        self.assertIn("# a comment", book)  # comment kept inside the code block
 
     def test_authored_include_is_not_demoted_or_attributed(self):
         entries = [

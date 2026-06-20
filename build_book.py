@@ -38,6 +38,10 @@ _ABSOLUTE_URL = ("http://", "https://", "data:", "/", "#")
 JSX_TAG_RE = re.compile(r"</?[A-Z][A-Za-z0-9]*(?:\s[^>]*?)?/?>")
 MDX_IMPORT_RE = re.compile(r"^\s*(import|export)\s")
 FRONTMATTER_TITLE_RE = re.compile(r"""^\s*title:\s*['"]?(.+?)['"]?\s*$""")
+# A line that is *only* an HTML/JSX wrapper tag (e.g. `<section title="x">`,
+# `</section>`). Removing these stops a wrapper tag with no trailing blank line
+# from starting an HTML block that swallows the next code fence.
+STANDALONE_TAG_RE = re.compile(r"^</?[A-Za-z][\w.-]*(?:\s[^>]*?)?/?>$")
 
 
 # --------------------------------------------------------------------------- #
@@ -158,13 +162,37 @@ def strip_jsx(md):
     return _join_like(md, out)
 
 
+def strip_standalone_html_tags(md):
+    """Remove lines that are a single HTML/JSX wrapper tag (outside code)."""
+    lines = md.splitlines()
+    out = [
+        line
+        for line, code in zip(lines, _code_mask(lines))
+        if code or not STANDALONE_TAG_RE.match(line.strip())
+    ]
+    return _join_like(md, out)
+
+
 def preprocess_mdx(md):
     """Clean an MDX source into plain Markdown (frontmatter + JSX stripped)."""
     body, title = strip_yaml_frontmatter(md)
     body = strip_jsx(body)
+    body = strip_standalone_html_tags(body)
     if title:
         body = f"# {title}\n\n{body.lstrip()}"
     return body
+
+
+# Fetched platform.claude.com / code.claude.com pages are MDX-flavored (they
+# contain JSX components like <CodeGroup>), so they need the same cleaning as
+# .mdx files — otherwise a <CodeGroup> with no trailing blank line swallows the
+# following code fence and code comments leak into the TOC as headings.
+def needs_mdx_cleaning(path):
+    return (
+        path.endswith(".mdx")
+        or path.startswith("docs/platform/")
+        or path.startswith("docs/claude-code/")
+    )
 
 
 def _title_from_path(rel_path):
@@ -230,7 +258,7 @@ def assemble(entries, read_text, root):
         if entry.get("authored"):
             content = raw.rstrip() + "\n"
         else:
-            if entry["path"].endswith(".mdx"):
+            if needs_mdx_cleaning(entry["path"]):
                 raw = preprocess_mdx(raw)
             src_dir = posixpath.dirname(entry["path"])
             raw = rewrite_image_paths(raw, src_dir, root)
