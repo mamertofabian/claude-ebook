@@ -12,6 +12,7 @@
 
 # ----- Front matter -----
 ~ frontmatter/preface.md
+~ frontmatter/whats-new.md
 
 # ============================================================
 PART: Part I — Foundations
