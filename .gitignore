@@ -26,6 +26,9 @@ htmlcov/
 .eggs/
 dist/
 
+# Local research notes — kept on disk, not published
+sources.md
+
 # Session-local agent notes
 .claude/insights/
 
