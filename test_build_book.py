@@ -9,6 +9,7 @@ import unittest
 from build_book import (
     assemble,
     demote_headings,
+    fix_nested_code_fences,
     min_heading_level,
     normalize_source,
     parse_manifest,
@@ -155,6 +156,44 @@ class MdxTest(unittest.TestCase):
     def test_strip_standalone_html_tags_keeps_tags_in_code(self):
         md = "```\n<section title='x'>\n```\n"
         self.assertEqual(strip_standalone_html_tags(md), md)
+
+
+class FixNestedCodeFencesTest(unittest.TestCase):
+    def test_block_with_inner_fence_is_rewrapped_with_longer_fence(self):
+        # A notebook code cell whose string contains a ```html ... ``` example:
+        # the inner bare ``` must not close the outer block.
+        md = (
+            "```python\n"
+            'PROMPT = """\n'
+            "```html\n"
+            "<div>x</div>\n"
+            "```\n"
+            '"""\n'
+            "# Generate with prompt\n"
+            "run()\n"
+            "```\n"
+        )
+        out = fix_nested_code_fences(md)
+        self.assertIn("````python", out)  # outer bumped to 4 backticks
+        self.assertIn("```html", out)  # inner fence preserved
+        # The comment stays inside the (now correctly closed) code block:
+        import subprocess
+
+        headers = subprocess.run(
+            ["pandoc", "-f", "gfm", "-t", "native"],
+            input=out,
+            capture_output=True,
+            text=True,
+        ).stdout.count("Header ")
+        self.assertEqual(headers, 0)
+
+    def test_simple_block_without_nesting_is_unchanged(self):
+        md = "```python\nx = 1\n```\n"
+        self.assertEqual(fix_nested_code_fences(md), md)
+
+    def test_prose_between_blocks_is_preserved(self):
+        md = "```\na\n```\ntext\n```\nb\n```\n"
+        self.assertEqual(fix_nested_code_fences(md), md)
 
 
 class AssembleTest(unittest.TestCase):

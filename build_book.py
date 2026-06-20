@@ -195,6 +195,67 @@ def needs_mdx_cleaning(path):
     )
 
 
+FENCE_RE = re.compile(r"^(`{3,}|~{3,})(.*)$")
+
+
+def _fence_parts(line):
+    """(marker, char, has_info) for a fence line, else None."""
+    m = FENCE_RE.match(line.strip())
+    if not m:
+        return None
+    marker = m.group(1)
+    return marker, marker[0], m.group(2).strip() != ""
+
+
+def fix_nested_code_fences(md):
+    """Re-wrap code blocks that contain inner fences with a longer fence.
+
+    nbconvert wraps a code cell's source in ```` ``` ````; if that source contains
+    a fenced example (e.g. a ```html block inside a string), the inner bare ```
+    closes the cell early and the rest of the cell spills out as Markdown — code
+    comments then become headings. Bumping the outer fence past the inner ones
+    (CommonMark: a fence is closed only by a longer-or-equal *bare* fence of the
+    same char) keeps the whole cell as code. A no-op when there is no nesting.
+    """
+    lines = md.splitlines()
+    out, i, n = [], 0, len(lines)
+    while i < n:
+        parts = _fence_parts(lines[i])
+        if parts is None:
+            out.append(lines[i])
+            i += 1
+            continue
+        marker, ch, _ = parts
+        opener_ticks = len(marker)
+        j, inner, closer, has_inner = i + 1, 0, None, False
+        while j < n:
+            pj = _fence_parts(lines[j])
+            if pj and pj[1] == ch:
+                if pj[2]:  # info-string fence -> inner example opener
+                    inner += 1
+                    has_inner = True
+                elif inner > 0:  # bare fence closes an inner example
+                    inner -= 1
+                else:  # bare fence closes the cell
+                    closer = j
+                    break
+            j += 1
+        if closer is None:  # unbalanced — leave as-is
+            out.append(lines[i])
+            i += 1
+            continue
+        if has_inner:
+            new_marker = ch * max(opener_ticks + 1, 4)
+            info = lines[i].strip()[opener_ticks:]
+            out.append(new_marker + info)
+            out.extend(lines[i + 1 : closer])
+            out.append(new_marker)
+        else:
+            out.extend(lines[i : closer + 1])
+        i = closer + 1
+    return _join_like(md, out)
+
+
 def _title_from_path(rel_path):
     stem = posixpath.splitext(posixpath.basename(rel_path))[0]
     if stem.upper() in ("README", "SKILL"):
@@ -260,6 +321,7 @@ def assemble(entries, read_text, root):
         else:
             if needs_mdx_cleaning(entry["path"]):
                 raw = preprocess_mdx(raw)
+            raw = fix_nested_code_fences(raw)
             src_dir = posixpath.dirname(entry["path"])
             raw = rewrite_image_paths(raw, src_dir, root)
             content = normalize_source(raw, entry["path"], base=2)
