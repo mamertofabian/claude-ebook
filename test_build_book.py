@@ -92,6 +92,17 @@ class RewriteImagePathsTest(unittest.TestCase):
         md = "```\n![x](images/x.png)\n```\n"
         self.assertEqual(rewrite_image_paths(md, "repo/sub", "repo"), md)
 
+    def test_site_relative_left_alone_without_resolver(self):
+        md = "![x](/images/a.png)\n"
+        self.assertEqual(rewrite_image_paths(md, "repo/docs", "repo"), md)
+
+    def test_site_relative_rewritten_via_resolver(self):
+        md = "![x](/images/a.png)\n"
+        out = rewrite_image_paths(
+            md, "repo/docs", "repo", resolve_site=lambda p: "repo/docs" + p
+        )
+        self.assertEqual(out, "![x](repo/docs/images/a.png)\n")
+
 
 class NormalizeSourceTest(unittest.TestCase):
     def test_demotes_to_base_level_and_adds_attribution(self):
@@ -238,6 +249,20 @@ class AssembleTest(unittest.TestCase):
         self.assertNotIn("<CodeGroup>", book)
         self.assertIn("## Caching", book)
         self.assertIn("# a comment", book)  # comment kept inside the code block
+
+    def test_resolves_site_relative_images_via_resolver(self):
+        entries = [
+            {"type": "part", "title": "VI"},
+            {"type": "source", "path": "mcp/docs/develop/x.mdx", "authored": False},
+        ]
+        raw = "# T\n\n![s](/images/a.png)\n"
+        book = assemble(
+            entries,
+            read_text=lambda p: raw,
+            root=".",
+            resolve_site=lambda src, site: "mcp/docs" + site,
+        )
+        self.assertIn("mcp/docs/images/a.png", book)
 
     def test_authored_include_is_not_demoted_or_attributed(self):
         entries = [

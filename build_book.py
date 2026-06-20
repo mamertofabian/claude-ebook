@@ -32,7 +32,6 @@ import re
 HEADING_RE = re.compile(r"^(#{1,6})(\s+\S.*)$")
 IMG_MD_RE = re.compile(r"(!\[[^\]]*\]\()([^)\s]+)(\))")
 IMG_HTML_RE = re.compile(r'(<img[^>]*?\ssrc=")([^"]+)(")', re.IGNORECASE)
-_ABSOLUTE_URL = ("http://", "https://", "data:", "/", "#")
 
 # MDX: JSX component tags (capitalised names) and import/export lines.
 JSX_TAG_RE = re.compile(r"</?[A-Z][A-Za-z0-9]*(?:\s[^>]*?)?/?>")
@@ -103,29 +102,50 @@ def demote_headings(md, shift):
     return _join_like(md, out)
 
 
-def rewrite_image_paths(md, source_dir, root):
-    """Rewrite relative image refs to be relative to `root`; skip code/URLs."""
+def rewrite_image_paths(md, source_dir, root, resolve_site=None):
+    """Rewrite relative image refs to be relative to `root`; skip code/URLs.
+
+    Site-relative paths (`/images/x.png`) are passed to `resolve_site` if given
+    (used to map them onto local repo assets); left untouched otherwise.
+    """
 
     def remap(path):
-        if path.startswith(_ABSOLUTE_URL):
+        if path.startswith(("http://", "https://", "data:", "#")):
+            return path
+        if path.startswith("/"):
+            if resolve_site:
+                resolved = resolve_site(path)
+                if resolved:
+                    return resolved
             return path
         joined = posixpath.normpath(posixpath.join(source_dir, path))
         return posixpath.relpath(joined, root)
 
-    def sub_line(line):
-        line = IMG_MD_RE.sub(
-            lambda m: m.group(1) + remap(m.group(2)) + m.group(3), line
+    def sub(text):
+        text = IMG_MD_RE.sub(
+            lambda m: m.group(1) + remap(m.group(2)) + m.group(3), text
         )
-        line = IMG_HTML_RE.sub(
-            lambda m: m.group(1) + remap(m.group(2)) + m.group(3), line
+        return IMG_HTML_RE.sub(
+            lambda m: m.group(1) + remap(m.group(2)) + m.group(3), text
         )
-        return line
 
-    lines = md.splitlines()
-    out = [
-        line if code else sub_line(line) for line, code in zip(lines, _code_mask(lines))
-    ]
-    return _join_like(md, out)
+    # Process non-code regions as whole blocks so multi-line image markdown and
+    # multi-line <img> tags (e.g. MDX <Frame><img ... /></Frame>) are matched.
+    out, buf, in_code = [], [], False
+    for line in md.splitlines(keepends=True):
+        if line.lstrip().startswith(("```", "~~~")):
+            if buf:
+                out.append(sub("".join(buf)))
+                buf = []
+            out.append(line)
+            in_code = not in_code
+        elif in_code:
+            out.append(line)
+        else:
+            buf.append(line)
+    if buf:
+        out.append(sub("".join(buf)))
+    return "".join(out)
 
 
 def strip_yaml_frontmatter(md):
@@ -308,8 +328,13 @@ def parse_manifest(text):
     return entries
 
 
-def assemble(entries, read_text, root):
-    """Concatenate entries into one normalized Markdown document."""
+def assemble(entries, read_text, root, resolve_site=None):
+    """Concatenate entries into one normalized Markdown document.
+
+    `resolve_site(source_path, site_path)` optionally maps a site-relative image
+    path onto a local asset; used so repo docs that reference `/images/...`
+    embed the cloned image instead of a dead link.
+    """
     chunks = []
     for entry in entries:
         if entry["type"] == "part":
@@ -323,7 +348,8 @@ def assemble(entries, read_text, root):
                 raw = preprocess_mdx(raw)
             raw = fix_nested_code_fences(raw)
             src_dir = posixpath.dirname(entry["path"])
-            raw = rewrite_image_paths(raw, src_dir, root)
+            site = (lambda p: resolve_site(entry["path"], p)) if resolve_site else None
+            raw = rewrite_image_paths(raw, src_dir, root, resolve_site=site)
             content = normalize_source(raw, entry["path"], base=2)
         chunks.append(content.rstrip() + "\n\n")
     return "".join(chunks)
@@ -349,6 +375,26 @@ def main():
         ) as f:
             return f.read()
 
+    def resolve_site(source_path, site_path):
+        """Map a site-relative image (/images/x.png) onto a local repo asset by
+        walking the source file's ancestor directories for a matching file."""
+        rel = site_path.lstrip("/").split("?")[0].split("#")[0]
+        directory = os.path.dirname(source_path)
+        while True:
+            candidate = (
+                os.path.join(root, directory, rel)
+                if directory
+                else os.path.join(root, rel)
+            )
+            if os.path.isfile(candidate):
+                return os.path.relpath(candidate, root).replace(os.sep, "/")
+            if not directory:
+                return None
+            parent = os.path.dirname(directory)
+            if parent == directory:
+                return None
+            directory = parent
+
     with open(args.manifest, encoding="utf-8") as f:
         entries = parse_manifest(f.read())
 
@@ -363,7 +409,7 @@ def main():
             + "\n  ".join(missing)
         )
 
-    book = assemble(entries, read_text=read_text, root=".")
+    book = assemble(entries, read_text=read_text, root=".", resolve_site=resolve_site)
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
     with open(args.out, "w", encoding="utf-8") as f:
         f.write(book)

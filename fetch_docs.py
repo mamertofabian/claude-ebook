@@ -29,11 +29,16 @@ Usage:
 
 import argparse
 import os
+import re
 import subprocess
 import sys
+import urllib.parse
 from html.parser import HTMLParser
 
 from anthropic_resources import fetch, parse_llms
+
+_IMG_MD_RE = re.compile(r"(!\[[^\]]*\]\()([^)\s]+)(\))")
+_IMG_HTML_RE = re.compile(r'(<img[^>]*?\ssrc=")([^"]+)(")', re.IGNORECASE)
 
 # --------------------------------------------------------------------------- #
 # Curation
@@ -165,6 +170,63 @@ def select_doc_paths(paths, allow=None, deny=None, explicit=None):
 
 def local_path_for(rel_path, base, out_dir):
     return f"{out_dir}/{base}/{rel_path}"
+
+
+def _normalize_img_src(src, origin):
+    """Turn a doc image src into a fetchable absolute URL.
+
+    Anthropic docs render images through a Next.js proxy
+    (`/_next/image?url=<encoded real URL>&w=..`) and reference site-relative
+    paths (`/docs/images/x.svg`). Both are unresolvable once the page is pulled
+    out of the site, so decode the proxy and give site-relative paths an origin.
+    """
+    if src.startswith("/_next/image"):
+        params = urllib.parse.parse_qs(urllib.parse.urlparse(src).query)
+        if params.get("url"):
+            src = params["url"][0]  # parse_qs already URL-decodes
+    if src.startswith("/"):
+        src = origin + src
+    return src
+
+
+def rewrite_doc_image_urls(md, origin):
+    """Rewrite Next.js-proxy and site-relative image srcs to absolute URLs.
+
+    Non-code regions are rewritten as whole blocks (not line by line) so that
+    images whose alt text wraps across lines are still matched. Fenced code
+    blocks are left untouched.
+    """
+
+    def sub(text):
+        text = _IMG_MD_RE.sub(
+            lambda m: m.group(1) + _normalize_img_src(m.group(2), origin) + m.group(3),
+            text,
+        )
+        return _IMG_HTML_RE.sub(
+            lambda m: m.group(1) + _normalize_img_src(m.group(2), origin) + m.group(3),
+            text,
+        )
+
+    out, buf, in_code = [], [], False
+    for line in md.splitlines(keepends=True):
+        if line.lstrip().startswith(("```", "~~~")):
+            if buf:
+                out.append(sub("".join(buf)))
+                buf = []
+            out.append(line)
+            in_code = not in_code
+        elif in_code:
+            out.append(line)
+        else:
+            buf.append(line)
+    if buf:
+        out.append(sub("".join(buf)))
+    return "".join(out)
+
+
+def _origin_of(url):
+    p = urllib.parse.urlparse(url)
+    return f"{p.scheme}://{p.netloc}"
 
 
 class _MainContentExtractor(HTMLParser):
@@ -299,6 +361,7 @@ def fetch_md_pages(rel_paths, base_url, base, out_dir, force, failures):
             content = fetch(base_url + rel)
             if len(content) < 200 or "<html" in content[:500].lower():
                 raise RuntimeError(f"unexpected non-markdown body ({len(content)} B)")
+            content = rewrite_doc_image_urls(content, _origin_of(base_url))
             _write(dest, content)
             written += 1
             print(f"  [md] {dest}", file=sys.stderr)
@@ -317,6 +380,7 @@ def fetch_essays(out_dir, force, failures):
         try:
             html = fetch(url)
             md = clean_essay_markdown(_html_to_markdown(extract_main_content(html)))
+            md = rewrite_doc_image_urls(md, _origin_of(url))
             if len(md) < 400:
                 raise RuntimeError(f"essay too short after extraction ({len(md)} B)")
             _write(dest, md)
